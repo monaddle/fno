@@ -1,0 +1,41 @@
+class VM(os: OS, provider: Provider)
+
+
+class OS(name: String, version: String) {
+  def installDocker: Result
+  def startContainer(image: DockerImage, name: String, imageArguments: Maybe[ImageArguments]): Result
+}
+
+val Ubuntu1404 extends OS {
+  val name = "Ubuntu"
+  val version
+  def installDocker = {
+    SSH "..."
+  }
+}
+
+class DockerImage(imageName: String) {
+
+}
+class DockerContainer(host: VM, dockerImage: DockerImage)
+class Provider {
+  def createVM(vmOpts: VMOptions): VMDetails
+  def setupFirewall(vm: VM, firewallOpts: FirewallOpts): Result
+}
+
+val DigitalOcean(token: TokenPath) extends Provider {
+  val baseUrl = https://api.digitalocean.com
+  def createVM(vmOpts: VMOptions) = {
+    POST(url="$baseUrl/v2/droplets", header= vmOpts)
+  }
+
+  def setupFirewall(vmOpts: VMOptions) = {
+    POST(url="$baseURL/v2/droplets", "no")
+  }
+
+  class DigitalOceanVMOpts(name: String, region: RegionString, size: Size, image: String, ssh_key: Path) {
+    def apply(vmOpts: VMOpts) = DigitalOceanVMOpts(name=name, region=region, size=size, image=image, ssh_key=ssh_key)
+  }
+}
+
+class VMOptions(name: String, region: RegionString, size: Size, image: String, ssh_key: Path)
