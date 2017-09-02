@@ -18,12 +18,15 @@ class PrestwoodParserSpec extends FlatSpec with Matchers {
     val tokens = PrestwoodLexer(
       """
         class DockerContainer(imageName: String, runName: String, vm: VM)
+        class DockerContainer2(imageName: String, runName: String, vm: VM)
         DockerContainer(imageName="library/hello-world", runName="hello", vm=VM(provider=DigitalOcean, os=Ubuntu1404))
       """.stripMargin)
     println(tokens)
 
     val andthen = PrestwoodParser(tokens.get)
-    andthen.right.get
-    println("collected class declarations", andthen.right.get.cata(PrestwoodAST.collectClassDeclarations))
+    val a =andthen.right.get
+
+    println("collected class declarations", PrestwoodAST.a(andthen.right.get))
+    println("collected class declarations", PrestwoodAST.a(andthen.right.get))
   }
 }

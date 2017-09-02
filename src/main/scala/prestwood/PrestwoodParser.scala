@@ -31,7 +31,7 @@ import prestwood._
 object PrestwoodParser extends Parsers {
   override type Elem = PrestwoodToken
   type AST = Fix[PrestwoodAST]
-  private def identifier: Parser[AST] = {
+  private def identifier: Parser[PrestwoodAST.Id[AST]] = {
     accept("identifier", { case IDENTIFIER2(name) => PrestwoodAST.identifier(name) })
   }
 
@@ -57,7 +57,7 @@ object PrestwoodParser extends Parsers {
   def functionInvocation: Parser[AST] = identifier ~ (LPAREN ~> repsep(expression, COMMA) <~ RPAREN) ^^ {case id ~ args => PrestwoodAST.instantiation(id, args)}
 
   private def expression: Parser[AST] = {
-    classDeclaration | declaration | functionDef | instantiation| assignment | functionInvocation| identifier | literal
+    classDeclaration | declaration | functionDef | instantiation| assignment | functionInvocation | literal
   }
 
   def argsDefinitions: Parser[List[AST]] = LPAREN ~> rep(argumentDefinition) <~ RPAREN
