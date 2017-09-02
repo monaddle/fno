@@ -32,15 +32,19 @@ object PrestwoodParser extends Parsers {
   override type Elem = PrestwoodToken
   type AST = Fix[PrestwoodAST]
   private def identifier: Parser[PrestwoodAST.Id[AST]] = {
-    accept("identifier", { case IDENTIFIER2(name) => PrestwoodAST.identifier(name) })
+    accept("identifier", { case IDENTIFIER2(name) => PrestwoodAST.ID(name) })
   }
 
   private def literal: Parser[AST] = {
     accept("string literal", { case  LITERAL2(name) => PrestwoodAST.stringLiteral(name)})
   }
 
-  private def assignment: Parser[AST] = {
-    (identifier <~ EQUALS) ~ expression ^^ {case id ~ expression => PrestwoodAST.assignment(id, expression)}
+  def assignment: Parser[AST] = {
+    (identifier <~ EQUALS) ~ assignmentExpression ^^ {case id ~ expression => PrestwoodAST.assignment(id, expression)}
+  }
+
+  def assignmentExpression: Parser[AST] = {
+    instantiation  | literal | (identifier ^^ {x=> Fix(x)})
   }
 
   private def declaration: Parser[AST] = {
@@ -54,7 +58,7 @@ object PrestwoodParser extends Parsers {
     rep1(assignment <~ COMMA.?)
   }
 
-  def functionInvocation: Parser[AST] = identifier ~ (LPAREN ~> repsep(expression, COMMA) <~ RPAREN) ^^ {case id ~ args => PrestwoodAST.instantiation(id, args)}
+  def functionInvocation: Parser[AST] = identifier ~ (LPAREN ~> repsep(expression, COMMA) <~ RPAREN) ^^ {case id ~ args => PrestwoodAST.functionInvocation(id, args)}
 
   private def expression: Parser[AST] = {
     classDeclaration | declaration | functionDef | instantiation| assignment | functionInvocation | literal
@@ -62,8 +66,8 @@ object PrestwoodParser extends Parsers {
 
   def argsDefinitions: Parser[List[AST]] = LPAREN ~> rep(argumentDefinition) <~ RPAREN
 
-  private def classDeclaration: Parser[AST] = CLASSKEYWORD ~> identifier ~ argsDefinitions ~ (EXTENDS ~> identifier).? ^^ {
-    case id ~ attrs ~ parent => PrestwoodAST.classDelcaration(id,attrs, parent, PrestwoodAST.block(Nil))
+  private def classDeclaration: Parser[AST] = CLASSKEYWORD ~> identifier ~ argsDefinitions ~ ((EXTENDS ~> identifier).?) ~ (block.?) ^^ {
+    case id ~ attrs ~ parent ~ block => PrestwoodAST.classDelcaration(id,attrs, parent, block.getOrElse(PrestwoodAST.block(Nil)))
   }
 
   //private def classDeclarationWithBlock: Parser[AST] = classDeclaration ~ block ^^ {case declaration ~ block => declaration.copy(block=block)}
@@ -79,10 +83,11 @@ object PrestwoodParser extends Parsers {
   }
 
   def apply(tokens: Seq[PrestwoodToken]): Either[String, AST] = {
-    val reader = new FnopReader(tokens)
+    val reader = new PrestwoodReader(tokens)
     program(reader) match {
       case NoSuccess(msg, next) => Left(msg)
       case Success(result, next) =>
+        println(next.atEnd)
         Right(result)
     }
   }

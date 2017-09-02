@@ -15,7 +15,10 @@ import matryoshka.patterns._
 
 import Scalaz._
 
-sealed trait PrestwoodAST[A]
+sealed trait PrestwoodAST[A] {
+  import PrestwoodAST.fnopast3Functor
+  def map[_, B](f: A => B): PrestwoodAST[B] = fnopast3Functor(this)(f)
+}
 
 object PrestwoodAST {
   type FAST = Fix[PrestwoodAST]
@@ -71,14 +74,14 @@ object PrestwoodAST {
   def andThen(fst: FAST, scd: FAST): FAST = Fix(AndThen(fst, scd))
   def argumentDefinition(name: Id[FAST], `type`: Id[FAST]): FAST = Fix(ArgumentDefinition(name, `type`))
   def assignment(name: Id[FAST], expr: FAST): FAST = Fix(Assignment(name, expr))
-  def assignment(name: String, expr: FAST): FAST = assignment(identifier(name), expr)
+  def assignment(name: String, expr: FAST): FAST = assignment(ID(name), expr)
   def stringLiteral(value: String): FAST = Fix(StringLiteral(value))
   def instantiation(id: Id[FAST], arg: List[FAST]): FAST = Fix(Instantiation(id, arg))
-  def instantiation(id: String, arg: List[FAST]): FAST = instantiation(identifier(id), arg)
+  def instantiation(id: String, arg: List[FAST]): FAST = instantiation(ID(id), arg)
   def classDelcaration(id: Id[FAST] , params: List[FAST], parent: Option[Id[FAST]], block: FAST): FAST = {
     Fix(ClassDeclaration(id, params, parent, block))
   }
-  def identifier(id: String): Id[FAST] = Id[FAST](id)
+  def ID(id: String): Id[FAST] = Id[FAST](id)
 
   def collectInstantationNames: Algebra[PrestwoodAST, List[String]] = {
     case Instantiation(id, _) => List(id.id)
@@ -127,8 +130,6 @@ object PrestwoodAST {
   def d: GAlgebraM[CF, Logged, PrestwoodAST, List[String]] = {
     case Assignment(Id(id), expr) =>
   }*/
-
-
   def e: GAlgebraM[Logged, Logged, PrestwoodAST, PrestwoodAST[_]] = {
     case Assignment(Id(id), expr) => for {
       a <- expr
@@ -137,8 +138,65 @@ object PrestwoodAST {
     case x => Writer(Vector(), x)
   }
 
+  def replaceInPlace: (PrestwoodAST[Fix[PrestwoodAST]] => PrestwoodAST[Fix[PrestwoodAST]]) = {
+    case Assignment(Id(id), expr) => Assignment(Id("works??"), expr)
+    case x => x
+  }
+
+  def checkstuff: (Fix[PrestwoodAST]) => Logged[Fix[PrestwoodAST]] = {
+    case a @ Fix(AndThen(fst, scd)) => println("and then!")
+      Writer(Vector("andthen"), a)
+    case x=> Writer(Vector(), x)
+  }
+  type cf[A] = Cofree[PrestwoodAST, A]
+
+
+/*  def children: (PrestwoodAST[Fix[PrestwoodAST]] => List[PrestwoodAST[Fix[PrestwoodAST]]]) = {
+    case ArgumentDefinition(id, t) => List(id)
+    case AndThen(fst, scd) => List(fst.unFix, scd.unFix)
+    case Assignment(id, expr) => List(id,expr.unFix)
+    case Block(x) => x map (_.unFix)
+    case ClassDeclaration(id, x, y, z) => (y map(List(_)) getOrElse Nil) ++ x.map(_.unFix) ++ List(id,  z.unFix  )
+    case Declaration(id, expr) => List(id, expr.unFix)
+    case FunctionDefinition(id, args, block) => List(id, block.unFix) ++ (args map (_.unFix)) flatten
+    case FunctionInvocation(id, args) => id :: args.map(_.unFix)
+    case Instantiation(id, args) => List(id) ++ (args.map(_.unFix))
+    case Id(id) => Nil
+  }*/
+  def f: GAlgebra[cf, PrestwoodAST, List[String]] = {
+    case ClassDeclaration(id, params, parent, block) => println("head, tail", block.head, block.tail)
+      List(id.id)
+    case AndThen(fst, scd) => println("fst head,tail", fst.head, fst.tail  )
+      fst.head ++ scd.head
+    case x=>
+      println(x)
+
+      List(x.getClass.toString)
+  }
+
+  //type Fr[A] = Free[PrestwoodAST[Fix[PrestwoodAST]], A]
+
+  type lstring = List[String]
+  type freel[A] = Free[List, A]
+
+
+
+
+
+  def extractSomething(id: String): PrestwoodAST[Free[PrestwoodAST, String]] = {
+    if(id == "DockerContainer") Instantiation(Id(id), List.empty[Free[PrestwoodAST, String]])
+    else Id(id)
+  }
+
   def a(ast: FAST) = {
-    ast.cataM(collectClassDeclarations)
-    ast.para(b)
+  //  ast.transCataTM(checkstuff)
+  //  ast.transAnaTM(checkstuff)
+
+
+
+    //al a = ast.project.embed
+    //a.getClass.toString
+    ast.histo(f)
+
   }
 }

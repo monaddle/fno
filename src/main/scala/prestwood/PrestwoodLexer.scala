@@ -59,9 +59,9 @@ object PrestwoodLexer extends RegexParsers {
   }
 }
 
-class FnopReader(tokens: Seq[PrestwoodToken]) extends Reader[PrestwoodToken] {
+class PrestwoodReader(tokens: Seq[PrestwoodToken]) extends Reader[PrestwoodToken] {
   override def first: PrestwoodToken = tokens.head
   override def atEnd: Boolean = tokens.isEmpty
   override def pos: Position = NoPosition
-  override def rest: Reader[PrestwoodToken] = new FnopReader(tokens.tail)
+  override def rest: Reader[PrestwoodToken] = new PrestwoodReader(tokens.tail)
 }
