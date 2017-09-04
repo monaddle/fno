@@ -9,8 +9,8 @@ import scala.util.parsing.input.{NoPosition, Position, Positional, Reader}
 trait PrestwoodToken
 case object LPAREN extends PrestwoodToken
 case object RPAREN extends PrestwoodToken
-case class IDENTIFIER2(value: String) extends PrestwoodToken
-case class LITERAL2(value: String) extends PrestwoodToken
+case class IDENTIFIER(value: String) extends PrestwoodToken
+case class LITERAL(value: String) extends PrestwoodToken
 case object COMMA extends PrestwoodToken
 case class ANYTHING() extends PrestwoodToken
 case object VAL extends PrestwoodToken
@@ -26,10 +26,10 @@ object PrestwoodLexer extends RegexParsers {
   def rparen = "\\)".r ^^ { _ => RPAREN}
   def comma = """,""".r ^^ { _ => COMMA}
   def anything = ".".r ^^ { _ => ANYTHING()}
-  def literal2: Parser[LITERAL2] = {
+  def literal2: Parser[LITERAL] = {
     """"[^"]*"""".r ^^ { str =>
       val content = str.substring(1, str.length - 1)
-      LITERAL2 (content)
+      LITERAL (content)
     }
   }
   def lcurl = "{" ^^ { _ => LCURL}
@@ -39,7 +39,7 @@ object PrestwoodLexer extends RegexParsers {
   def colon = ":" ^^ { _ => COLON}
   def `val` = """val""".r ^^ { _ => VAL}
   def equals = """=""".r ^^ { _ => EQUALS}
-  def identifier = """[a-zA-Z0-9]+""".r ^^ { str => IDENTIFIER2(str)}
+  def identifier = """[a-zA-Z0-9]+""".r ^^ { str => IDENTIFIER(str)}
   def classKeyword = """class""".r ^^ { _ => CLASSKEYWORD}
   def tokens: Parser[List[PrestwoodToken]] = rep1(`val` | classKeyword |
     colon |

@@ -32,11 +32,11 @@ object PrestwoodParser extends Parsers {
   override type Elem = PrestwoodToken
   type AST = Fix[PrestwoodAST]
   private def identifier: Parser[PrestwoodAST.Id[AST]] = {
-    accept("identifier", { case IDENTIFIER2(name) => PrestwoodAST.ID(name) })
+    accept("identifier", { case IDENTIFIER(name) => PrestwoodAST.ID(name) })
   }
 
   private def literal: Parser[AST] = {
-    accept("string literal", { case  LITERAL2(name) => PrestwoodAST.stringLiteral(name)})
+    accept("string literal", { case  LITERAL(name) => PrestwoodAST.stringLiteral(name)})
   }
 
   def assignment: Parser[AST] = {
@@ -64,19 +64,19 @@ object PrestwoodParser extends Parsers {
     classDeclaration | declaration | functionDef | instantiation| assignment | functionInvocation | literal
   }
 
-  def argsDefinitions: Parser[List[AST]] = LPAREN ~> rep(argumentDefinition) <~ RPAREN
+  def argsDefinitions: Parser[List[PrestwoodAST.ArgumentDefinition[AST]]] = LPAREN ~> rep(argumentDefinition) <~ RPAREN
 
   private def classDeclaration: Parser[AST] = CLASSKEYWORD ~> identifier ~ argsDefinitions ~ ((EXTENDS ~> identifier).?) ~ (block.?) ^^ {
-    case id ~ attrs ~ parent ~ block => PrestwoodAST.classDelcaration(id,attrs, parent, block.getOrElse(PrestwoodAST.block(Nil)))
+    case id ~ attrs ~ parent ~ block => PrestwoodAST.classDeclaration(id,attrs, parent, block.getOrElse(PrestwoodAST.Block(Nil)))
   }
 
   //private def classDeclarationWithBlock: Parser[AST] = classDeclaration ~ block ^^ {case declaration ~ block => declaration.copy(block=block)}
 
-  def block: Parser[AST] = LCURL ~> rep(expression) <~ RCURL ^^ { x => PrestwoodAST.block(x)}
+  def block: Parser[PrestwoodAST.Block[AST]] = LCURL ~> rep(expression) <~ RCURL ^^ { x => PrestwoodAST.Block(x)}
 
   def functionDef: Parser[AST] = (DEF ~> identifier) ~ argsDefinitions ~ block ^^ {case id ~ argsDefs ~ block => PrestwoodAST.functionDefinition(id, argsDefs, block)}//{ case id~ args ~ block => FunctionDefinition(id, block)}
 
-  private def argumentDefinition: Parser[AST] = (identifier <~ COLON) ~ identifier <~ COMMA.? ^^ {case id ~ t => PrestwoodAST.argumentDefinition(id, t) }
+  private def argumentDefinition: Parser[PrestwoodAST.ArgumentDefinition[AST]] = (identifier <~ COLON) ~ identifier <~ COMMA.? ^^ {case id ~ t => PrestwoodAST.ArgumentDefinition(id, t) }
 
   private def program: Parser[AST] = {
     rep1(expression) ^^ { x => x reduceRight PrestwoodAST.andThen}
